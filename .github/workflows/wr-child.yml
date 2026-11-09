@@ -1,0 +1,39 @@
+name: WR Child
+
+on:
+  workflow_run:
+    workflows: [WR Parent]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Triggering run
+        env:
+          W_EVENT: ${{ github.event.workflow_run.event }}
+          W_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          W_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+          W_PATH: ${{ github.event.workflow_run.path }}
+          W_WFID: ${{ github.event.workflow_run.workflow_id }}
+          W_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          W_RUN: ${{ github.event.workflow_run.id }}
+        run: |
+          echo "WR-RESULT event=$W_EVENT branch=$W_BRANCH head_repo=$W_REPO path=$W_PATH workflow_id=$W_WFID conclusion=$W_CONCLUSION run=$W_RUN"
+
+      - name: Download artifact from triggering run (as release.yml does)
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: Packages
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Show artifact
+        run: |
+          echo "WR-ARTIFACT:"; cat marker.txt 2>/dev/null || echo "(no artifact)"

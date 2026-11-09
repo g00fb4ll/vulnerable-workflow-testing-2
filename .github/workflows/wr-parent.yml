@@ -1,0 +1,30 @@
+# Stand-in for ci.yml: runs on push to main and on all PRs (including forks),
+# and uploads an artifact named "Packages" recording who built it.
+name: WR Parent
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write marker
+        env:
+          EVENT: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          HEAD_REF: ${{ github.head_ref || github.ref_name }}
+        run: |
+          printf 'built-by=base-wr-parent\nevent=%s\nhead_repo=%s\nhead_ref=%s\nsha=%s\n' \
+            "$EVENT" "$HEAD_REPO" "$HEAD_REF" "$GITHUB_SHA" > marker.txt
+          cat marker.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Packages
+          path: marker.txt
